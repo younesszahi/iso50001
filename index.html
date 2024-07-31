@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 50001 EnMS Data Input</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            color: #232f3e;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #ff9900;
+        }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        select, button {
+            padding: 10px;
+            margin: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #232f3e;
+            color: white;
+        }
+        .button-container {
+            text-align: center;
+        }
+        button {
+            background-color: #ff9900;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #e68a00;
+        }
+        .chart-container {
+            margin: 20px 0;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ISO 50001 EnMS Data Input</h1>
+        <div class="controls">
+            <select id="monthSelect">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <select id="yearSelect">
+                <!-- Options will be added dynamically in script -->
+            </select>
+            <button onclick="generateTable()">Generate Table</button>
+        </div>
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Facility Load</th>
+                    <th>IT Load</th>
+                    <th>Crash Chill</th>
+                    <th>Chillers</th>
+                    <th>Offices</th>
+                    <th>Generator Fuel</th>
+                    <th>Water</th>
+                    <th>Cooling Degree Day</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <div class="button-container">
+            <button onclick="generateRandomValues()">Generate Random Values</button>
+            <button onclick="generatePlots()">Generate Plots</button>
+            <button onclick="generateReport()">Generate Report</button>
+        </div>
+        <div id="chartContainer">
+            <div class="chart-container">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="pueChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="crashChillChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="chillersChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="officesChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="generatorFuelChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="waterChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="coolingDegreeDayChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+function handlePaste(e) {
+        e.preventDefault();
+
+        // Get pasted data
+        const data = e.clipboardData.getData('text').split('\n').map(row => row.split('\t'));
+
+        // Target table body
+        const tableBody = document.querySelector('#dataTable tbody');
+        tableBody.innerHTML = '';  // Clear existing table data
+
+        data.forEach((row, rowIndex) => {
+            const tableRow = tableBody.insertRow();
+            row.forEach((cell, cellIndex) => {
+                const tableCell = tableRow.insertCell();
+                tableCell.innerHTML = `<input type="text" value="${cell}" />`;
+            });
+        });
+    }
+
+    document.addEventListener('paste', handlePaste);
+
+
+
+        window.onload = function() {
+            const yearSelect = document.getElementById('yearSelect');
+            const currentYear = new Date().getFullYear();
+            for (let i = currentYear; i >= currentYear - 10; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.text = i;
+                yearSelect.appendChild(option);
+            }
+        };
+
+        function daysInMonth(month, year) {
+            return new Date(year, month, 0).getDate();
+        }
+
+        function generateTable() {
+            const month = document.getElementById('monthSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            const numDays = daysInMonth(month, year);
+            const table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            table.innerHTML = '';
+
+            for (let i = 1; i <= numDays; i++) {
+                const newRow = table.insertRow();
+                const dateCell = newRow.insertCell(0);
+                dateCell.innerText = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                for (let j = 1; j < 9; j++) {
+                    const newCell = newRow.insertCell(j);
+                    newCell.innerHTML = '<input type="text" />';
+                }
+            }
+        }
+
+        function generateRandomValues() {
+            const table = document.getElementById('dataTable');
+            for (let i = 1, row; row = table.rows[i]; i++) {
+                for (let j = 1; j < row.cells.length; j++) {
+                    row.cells[j].children[0].value = (Math.random() * 100).toFixed(2);
+                }
+            }
+        }
+
+        function generatePlots() {
+            const table = document.getElementById('dataTable');
+            const dates = [];
+            const facilityLoad = [];
+            const itLoad = [];
+            const crashChill = [];
+            const chillers = [];
+            const offices = [];
+            const generatorFuel = [];
+            const water = [];
+            const coolingDegreeDay = [];
+            const pue = [];
+
+            for (let i = 1, row; row = table.rows[i]; i++) {
+                dates.push(row.cells[0].innerText);
+                const fLoad = parseFloat(row.cells[1].children[0].value);
+                const itLoadValue = parseFloat(row.cells[2].children[0].value);
+                facilityLoad.push(fLoad);
+                itLoad.push(itLoadValue);
+                crashChill.push(parseFloat(row.cells[3].children[0].value));
+                chillers.push(parseFloat(row.cells[4].children[0].value));
+                offices.push(parseFloat(row.cells[5].children[0].value));
+                generatorFuel.push(parseFloat(row.cells[6].children[0].value));
+                water.push(parseFloat(row.cells[7].children[0].value));
+                coolingDegreeDay.push(parseFloat(row.cells[8].children[0].value));
+                const pueValue = fLoad / itLoadValue;
+                pue.push(pueValue.toFixed(2));
+            }
+
+            // Clear previous charts
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="pueChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="crashChillChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="chillersChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="officesChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="generatorFuelChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="waterChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="coolingDegreeDayChart"></canvas>
+                </div>
+            `;
+
+            // Generate Line Chart for Facility Load and IT Load
+            const lineChartCtx = document.getElementById('lineChart').getContext('2d');
+            new Chart(lineChartCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Facility Load',
+                            data: facilityLoad,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        },
+                        {
+                            label: 'IT Load',
+                            data: itLoad,
+                            borderColor: 'rgba(153, 102, 255, 1)',
+                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        }
+                    ]
+                }
+            });
+
+            // Generate Bar Chart for PUE
+            const pueChartCtx = document.getElementById('pueChart').getContext('2d');
+            new Chart(pueChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'PUE',
+                        data: pue,
+                        backgroundColor: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            if (value > 1.3) return 'red';
+                            if (value >= 1.2 && value <= 1.3) return 'orange';
+                            return 'green';
+                        },
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+
+            // Generate Other Charts
+            const charts = [
+                { id: 'crashChillChart', label: 'Crash Chill', data: crashChill },
+                { id: 'chillersChart', label: 'Chillers', data: chillers },
+                { id: 'officesChart', label: 'Offices', data: offices },
+                { id: 'generatorFuelChart', label: 'Generator Fuel', data: generatorFuel },
+                { id: 'waterChart', label: 'Water Consumption', data: water },
+                { id: 'coolingDegreeDayChart', label: 'Cooling Degree Day', data: coolingDegreeDay }
+            ];
+
+            charts.forEach(chart => {
+                const ctx = document.getElementById(chart.id).getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: chart.label,
+                            data: chart.data,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        }]
+                    }
+                });
+            });
+        }
+
+        function generateReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Title Page
+            const imageDataURL = 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg';
+            doc.setFontSize(24);
+            doc.setTextColor('#ff9900');
+            doc.text('ISO 50001 EnMS Data Report', 20, 30);
+            doc.setFontSize(14);
+            doc.setTextColor('#232f3e');
+            doc.text('Prepared by Younes ZAHI', 20, 50);
+            doc.text('Date: ' + new Date().toLocaleDateString(), 20, 60);
+            doc.text('This report provides an analysis of energy consumption data for the given month. The data includes Facility Load, IT Load, Crash Chill, Chillers, Offices, Generator Fuel, Water, and Cooling Degree Day. The analysis is visualized through various plots, including line charts and bar charts, to assess energy efficiency.', 20, 70);
+            doc.addPage();
+            
+            // Table Data
+            doc.setFontSize(16);
+            doc.setTextColor('#ff9900');
+            doc.text('Table Data', 20, 30);
+            doc.setFontSize(12);
+            doc.setTextColor('#232f3e');
+            
+            html2canvas(document.getElementById('dataTable')).then(canvas => {
+                doc.addImage(canvas.toDataURL('image/png'), 'PNG', 20, 40, 170, 0);
+                
+                // Add a page break for charts
+                doc.addPage();
+                
+                // Chart Titles and Descriptions
+                const charts = [
+                    { id: 'lineChart', title: 'Facility Load and IT Load', description: 'This chart shows the Facility Load and IT Load over the selected dates.' },
+                    { id: 'pueChart', title: 'PUE', description: 'This chart shows the Power Usage Effectiveness (PUE) values over the selected dates. Color indicates the efficiency: green for good, orange for average, and red for poor.' },
+                    { id: 'crashChillChart', title: 'Crash Chill', description: 'This chart represents the Crash Chill values over the selected dates.' },
+                    { id: 'chillersChart', title: 'Chillers', description: 'This chart shows the Chillers data over the selected dates.' },
+                    { id: 'officesChart', title: 'Offices', description: 'This chart represents the Offices data over the selected dates.' },
+                    { id: 'generatorFuelChart', title: 'Generator Fuel', description: 'This chart shows the Generator Fuel consumption over the selected dates.' },
+                    { id: 'waterChart', title: 'Water Consumption', description: 'This chart represents the Water consumption data over the selected dates.' },
+                    { id: 'coolingDegreeDayChart', title: 'Cooling Degree Day', description: 'This chart shows the Cooling Degree Day values over the selected dates.' }
+                ];
+                
+                let yPosition = 20;
+
+                charts.forEach(chart => {
+                    html2canvas(document.getElementById(chart.id)).then(chartCanvas => {
+                        if (yPosition + 100 > doc.internal.pageSize.height) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+                        doc.setFontSize(16);
+                        doc.setTextColor('#ff9900');
+                        doc.text(chart.title, 20, yPosition);
+                        yPosition += 10;
+                        doc.setFontSize(12);
+                        doc.setTextColor('#232f3e');
+                        doc.text(chart.description, 20, yPosition);
+                        yPosition += 20;
+                        doc.addImage(chartCanvas.toDataURL('image/png'), 'PNG', 20, yPosition, 170, 80);
+                        yPosition += 90;
+                    });
+                });
+                
+                // Conclusion
+                setTimeout(() => {
+                    doc.addPage();
+                    doc.setFontSize(16);
+                    doc.setTextColor('#ff9900');
+                    doc.text('Conclusion', 20, 30);
+                    doc.setFontSize(12);
+                    doc.setTextColor('#232f3e');
+                    doc.text('Summarize the findings and provide recommendations based on the data analysis.', 20, 40, {maxWidth: 170});
+                    
+                    doc.save('ISO_50001_EnMS_Data_Report.pdf');
+                }, 1000);
+            });
+        }
+    </script>
+</body>
+</html>
